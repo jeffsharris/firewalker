@@ -32,7 +32,7 @@ uint8_t gamma[] PROGMEM = { // Gamma correction table for LED brightness
 #define STEP_PIN      A9 // Analog input for footstep
 #define LED_PIN        6 // NeoPixel strip is connected here
 #define MAXSTEPS       3 // Process (up to) this many concurrent steps
-#define MAG_MULTIPLER  120
+#define MAG_MULTIPLER  130
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(N_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
