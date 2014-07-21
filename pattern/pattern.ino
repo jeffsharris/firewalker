@@ -32,13 +32,14 @@ uint8_t gamma[] PROGMEM = { // Gamma correction table for LED brightness
 #define STEP_PIN      A9 // Analog input for footstep
 #define LED_PIN        6 // NeoPixel strip is connected here
 #define MAXSTEPS       3 // Process (up to) this many concurrent steps
+#define MAG_MULTIPLER  50
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(N_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 // The readings from the sensors are usually around 250-350 when not being pressed,
 // then dip below 100 when the heel is standing on it (for Phil's shoes; Becky's
 // don't dip quite as low because she's smaller).
-#define STEP_TRIGGER    25  // Reading must be below this to trigger step
+#define STEP_TRIGGER    27  // Reading must be below this to trigger step
 #define STEP_HYSTERESIS 30  // After trigger, must return to this level
 
 int
@@ -80,6 +81,8 @@ void loop() {
 
   // Read analog input, with a little noise filtering
   stepFiltered = ((stepFiltered * 3) + analogRead(STEP_PIN)) >> 2;
+  Serial.print("stepFitered = " );
+  Serial.println(stepFiltered);
 
   // The strip doesn't simply display the current pressure reading.  Instead,
   // there's a bit of an animated flourish from heel to toe.  This takes time,
@@ -89,7 +92,7 @@ void loop() {
     if(stepFiltered >= STEP_HYSTERESIS) { // Has step let up?
       stepping = false;                   // Yep! Stop monitoring.
       // Add new step to the step list (may be multiple in flight)
-      stepMag[stepNum] = (STEP_HYSTERESIS - stepMin) * 6; // Step intensity
+      stepMag[stepNum] = (STEP_HYSTERESIS - stepMin) * MAG_MULTIPLER; // Step intensity
       stepX[stepNum]   = -80; // Position starts behind heel, moves forward
       if(++stepNum >= MAXSTEPS) stepNum = 0; // If many, overwrite oldest
     } else if(stepFiltered < stepMin) stepMin = stepFiltered; // Track min val
@@ -116,6 +119,8 @@ void loop() {
         m = ((long)stepMag[i] * (long)mx1) >> 6;
       }
       mag[j] += m; // Add magnitude to buffered sum
+      Serial.print("Setting magnitude: ");
+      Serial.println(mag[j]);
     }
     stepX[i]++; // Update position of step wave
     if(stepX[i] >= (80 + (SHOE_LEN_LEDS << 2)))
@@ -149,11 +154,14 @@ void loop() {
       r = 255;
       g = pgm_read_byte(&gamma[level - 255]);
       b = 0;
+      Serial.println("Red to yellow");
     } else if(level < 765) {       // 510-764 = yellow to white-1
       r = g = 255;
       b = pgm_read_byte(&gamma[level - 510]);
+      Serial.println("Yellow to white");
     } else {                       // 765+ = white
       r = g = b = 255;
+      Serial.println("White");
     }
     // Set R/G/B color along outside of shoe
     strip.setPixelColor(i+SHOE_LED_BACK, r, g, b);
@@ -163,5 +171,5 @@ void loop() {
   }
 
   strip.show();
-  delayMicroseconds(1500);
+  delayMicroseconds(10000);
 }
