@@ -27,8 +27,8 @@ uint8_t gamma[] PROGMEM = { // Gamma correction table for LED brightness
 // Becky's shoes: 39 LEDs total, 20 LEDs long, LED #5 at back.
 // Phil's shoes: 43 LEDs total, 22 LEDs long, LED #6 at back.
 #define N_LEDS        42 // TOTAL number of LEDs in strip
-#define SHOE_LEN_LEDS 18 // Number of LEDs down ONE SIDE of shoe
-#define SHOE_LED_BACK  4 // Index of REAR-MOST LED on shoe
+#define SHOE_LEN_LEDS 22 // Number of LEDs down ONE SIDE of shoe
+#define SHOE_LED_BACK  10 // Index of REAR-MOST LED on shoe
 #define STEP_PIN      A9 // Analog input for footstep
 #define LED_PIN        6 // NeoPixel strip is connected here
 #define MAXSTEPS       3 // Process (up to) this many concurrent steps
@@ -169,5 +169,5 @@ void loop() {
   }
 
   strip.show();
-  delayMicroseconds(10000);
+  delayMicroseconds(3000);
 }
