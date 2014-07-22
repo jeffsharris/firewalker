@@ -26,21 +26,21 @@ uint8_t gamma[] PROGMEM = { // Gamma correction table for LED brightness
 // the strip and shoe sizes, and the positions of the front- and rear-most LEDs.
 // Becky's shoes: 39 LEDs total, 20 LEDs long, LED #5 at back.
 // Phil's shoes: 43 LEDs total, 22 LEDs long, LED #6 at back.
-#define N_LEDS        42 // TOTAL number of LEDs in strip
-#define SHOE_LEN_LEDS 22 // Number of LEDs down ONE SIDE of shoe
+#define N_LEDS        40 // TOTAL number of LEDs in strip
+#define SHOE_LEN_LEDS 21 // Number of LEDs down ONE SIDE of shoe
 #define SHOE_LED_BACK  10 // Index of REAR-MOST LED on shoe
 #define STEP_PIN      A9 // Analog input for footstep
 #define LED_PIN        6 // NeoPixel strip is connected here
 #define MAXSTEPS       3 // Process (up to) this many concurrent steps
-#define MAG_MULTIPLER  130
+#define MAG_MULTIPLER  80
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(N_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 // The readings from the sensors are usually around 250-350 when not being pressed,
 // then dip below 100 when the heel is standing on it (for Phil's shoes; Becky's
 // don't dip quite as low because she's smaller).
-#define STEP_TRIGGER    30  // Reading must be below this to trigger step
-#define STEP_HYSTERESIS 35  // After trigger, must return to this level
+#define STEP_TRIGGER    45  // Reading must be below this to trigger step
+#define STEP_HYSTERESIS 49  // After trigger, must return to this level
 
 int
   stepMag[MAXSTEPS],  // Magnitude of steps
