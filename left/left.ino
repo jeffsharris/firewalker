@@ -1,6 +1,7 @@
 // 'Firewalker' LED sneakers sketch for Adafruit NeoPixels by Phillip Burgess
 
 #include <Adafruit_NeoPixel.h>
+#include <elapsedMillis.h>
 
 uint8_t gamma[] PROGMEM = { // Gamma correction table for LED brightness
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -32,15 +33,8 @@ uint8_t gamma[] PROGMEM = { // Gamma correction table for LED brightness
 #define STEP_PIN      A9 // Analog input for footstep
 #define LED_PIN        6 // NeoPixel strip is connected here
 #define MAXSTEPS       3 // Process (up to) this many concurrent steps
-#define MAG_MULTIPLER  50
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(N_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
-
-// The readings from the sensors are usually around 250-350 when not being pressed,
-// then dip below 100 when the heel is standing on it (for Phil's shoes; Becky's
-// don't dip quite as low because she's smaller).
-#define STEP_TRIGGER    50  // Reading must be below this to trigger step
-#define STEP_HYSTERESIS 70  // After trigger, must return to this level
 
 int
   stepMag[MAXSTEPS],  // Magnitude of steps
@@ -48,13 +42,22 @@ int
   mag[SHOE_LEN_LEDS], // Brightness buffer (one side of shoe)
   stepFiltered,       // Current filtered pressure reading
   stepCount,          // Number of 'frames' current step has lasted
-  stepMin;            // Minimum reading during current step
+  stepMin,            // Minimum reading during current step
+  stepTrigger,        // Reading must be below this to trigger ste
+  stepHysteresis,     // After trigger, must return to this level
+  multiplier;         // Used to map the difference between the hysteresis threshold and the max pressure to an index in a 255 long array.
 uint8_t
   stepNum = 0,        // Current step number in stepMag/stepX tables
   dup[SHOE_LEN_LEDS]; // Inside/outside copy indexes
 boolean
   stepping  = false;  // If set, step was triggered, waiting to release
 
+void setAllToColor(uint8_t r, uint8_t g, uint8_t b) {
+  for(int i=0; i<N_LEDS; i++) {
+    strip.setPixelColor(i, r, g, b);
+  }
+  strip.show();
+}
 
 void setup() {
   pinMode(9, INPUT_PULLUP); // Set internal pullup resistor for sensor pin
@@ -74,6 +77,36 @@ void setup() {
   memset(stepX  , 0, sizeof(stepX));
   strip.begin();
   stepFiltered = analogRead(STEP_PIN); // Initial input
+  
+  // Calculate the trigger and hysteresis values
+  elapsedMillis timer;
+  int max = 0;
+  int min = 1000;
+  setAllToColor(0, 0, 255);
+  while (timer < 5000) {
+    stepFiltered = ((stepFiltered * 3) + analogRead(STEP_PIN)) >> 2;
+    Serial.print("stepFitered calibration = " );
+    Serial.println(stepFiltered);
+    if (stepFiltered > max) {
+      max = stepFiltered;
+    }
+    if (stepFiltered < min) {
+      min = stepFiltered;
+    }
+  }
+  setAllToColor(255, 0, 0);
+  int tolerance = (max - min) * 0.2;
+  stepTrigger = min + tolerance;
+  stepHysteresis = max - tolerance;
+  multiplier = 1500 / (stepHysteresis - min);
+  Serial.print("Trigger = ");
+  Serial.println(stepTrigger);
+  Serial.print("Hysteresis = ");
+  Serial.println(stepHysteresis);  
+  Serial.print("Multiplier = ");
+  Serial.println(multiplier);   
+  delay(2000);
+  setAllToColor(0, 0, 0);
 }
 
 void loop() {
@@ -89,14 +122,14 @@ void loop() {
   // and during quick foot-tapping there could be multiple step animations
   // 'in flight,' so a short list is kept.
   if(stepping) { // If a step was previously triggered...
-    if(stepFiltered >= STEP_HYSTERESIS) { // Has step let up?
+    if(stepFiltered >= stepHysteresis) { // Has step let up?
       stepping = false;                   // Yep! Stop monitoring.
       // Add new step to the step list (may be multiple in flight)
-      stepMag[stepNum] = (STEP_HYSTERESIS - stepMin) * MAG_MULTIPLER; // Step intensity
+      stepMag[stepNum] = (stepHysteresis - stepMin) * multiplier; // Step intensity
       stepX[stepNum]   = -80; // Position starts behind heel, moves forward
       if(++stepNum >= MAXSTEPS) stepNum = 0; // If many, overwrite oldest
     } else if(stepFiltered < stepMin) stepMin = stepFiltered; // Track min val
-  } else if(stepFiltered < STEP_TRIGGER) { // No step yet; watch for trigger
+  } else if(stepFiltered < stepTrigger) { // No step yet; watch for trigger
     stepping = true;         // Got one!
     stepMin  = stepFiltered; // Note initial value
   }
@@ -152,14 +185,11 @@ void loop() {
       r = 255;
       g = pgm_read_byte(&gamma[level - 255]);
       b = 0;
-      Serial.println("Red to yellow");
     } else if(level < 765) {       // 510-764 = yellow to white-1
       r = g = 255;
       b = pgm_read_byte(&gamma[level - 510]);
-      Serial.println("Yellow to white");
     } else {                       // 765+ = white
       r = g = b = 255;
-      Serial.println("White");
     }
     // Set R/G/B color along outside of shoe
     strip.setPixelColor(i+SHOE_LED_BACK, r, g, b);
