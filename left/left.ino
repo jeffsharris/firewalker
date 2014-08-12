@@ -63,8 +63,8 @@ void calibrate() {
    // Calculate the trigger and hysteresis values
   elapsedMillis timer;
   int count = 10;
-  int maxes[count];
-  int mins[count];
+  int maxes[count]; // Keep track of the biggest and smallest values observed
+  int mins[count]; // Keep track of the biggest and smallest values observed
   
   for(int i=0; i<count; i++) {
     maxes[i] = 0;
@@ -72,20 +72,20 @@ void calibrate() {
   }
   
   setAllToColor(0, 0, 255);
-  while (timer < 5000) {
+  while (timer < 5000) { // Calibrate for 5 seconds
     stepFiltered = ((stepFiltered * 3) + analogRead(STEP_PIN)) >> 2;
     Serial.print("stepFitered calibration = " );
     Serial.println(stepFiltered);
     for(int i=0; i<count; i++) {
-      if (stepFiltered > maxes[i]) {
-        for(int j=count-1; j > i; j--) {
+      if (stepFiltered > maxes[i]) { // If this value is bigger, add it to the array
+        for(int j=count-1; j > i; j--) { // Push the lowest value out of the array
           maxes[j] = maxes[j-1];
         }
-        maxes[i] = stepFiltered;
+        maxes[i] = stepFiltered; // Add the new value
        continue; 
       }
     }
-    for(int i=0; i<count; i++) {
+    for(int i=0; i<count; i++) { // Same deal but for mins
       if (stepFiltered < mins[i]) {
         for(int j=count-1; j > i; j--) {
           maxes[j] = maxes[j-1];
@@ -96,10 +96,10 @@ void calibrate() {
     }
   }
   setAllToColor(255, 0, 0);
-  int tolerance = (maxes[count-1] - mins[count-1]) * 0.2;
+  int tolerance = (maxes[count-1] - mins[count-1]) * 0.2; // Give 20% buffer to the min/max observed
   stepTrigger = mins[count-1] + tolerance;
   stepHysteresis = maxes[count-1] - tolerance;
-  multiplier = 1800 / (stepHysteresis - mins[count-1]);
+  multiplier = 1800 / (stepHysteresis - mins[count-1]); // This magic value is chosen so there's a mix of white, yellow, and red
   Serial.print("Trigger = ");
   Serial.println(stepTrigger);
   Serial.print("Hysteresis = ");
