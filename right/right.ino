@@ -59,6 +59,57 @@ void setAllToColor(uint8_t r, uint8_t g, uint8_t b) {
   strip.show();
 }
 
+void calibrate() {
+   // Calculate the trigger and hysteresis values
+  elapsedMillis timer;
+  int count = 10;
+  int maxes[count];
+  int mins[count];
+  
+  for(int i=0; i<count; i++) {
+    maxes[i] = 0;
+    mins[i] = 1000;
+  }
+  
+  setAllToColor(0, 0, 255);
+  while (timer < 5000) {
+    stepFiltered = ((stepFiltered * 3) + analogRead(STEP_PIN)) >> 2;
+    Serial.print("stepFitered calibration = " );
+    Serial.println(stepFiltered);
+    for(int i=0; i<count; i++) {
+      if (stepFiltered > maxes[i]) {
+        for(int j=count-1; j > i; j--) {
+          maxes[j] = maxes[j-1];
+        }
+        maxes[i] = stepFiltered;
+       continue; 
+      }
+    }
+    for(int i=0; i<count; i++) {
+      if (stepFiltered < mins[i]) {
+        for(int j=count-1; j > i; j--) {
+          maxes[j] = maxes[j-1];
+        }
+        mins[i] = stepFiltered;
+       continue; 
+      }
+    }
+  }
+  setAllToColor(255, 0, 0);
+  int tolerance = (maxes[count-1] - mins[count-1]) * 0.2;
+  stepTrigger = mins[count-1] + tolerance;
+  stepHysteresis = maxes[count-1] - tolerance;
+  multiplier = 1800 / (stepHysteresis - mins[count-1]);
+  Serial.print("Trigger = ");
+  Serial.println(stepTrigger);
+  Serial.print("Hysteresis = ");
+  Serial.println(stepHysteresis);  
+  Serial.print("Multiplier = ");
+  Serial.println(multiplier);   
+  delay(2000);
+  setAllToColor(0, 0, 0); 
+}
+
 void setup() {
   pinMode(9, INPUT_PULLUP); // Set internal pullup resistor for sensor pin
   // As previously mentioned, the step animation is mirrored on the inside and
@@ -78,35 +129,7 @@ void setup() {
   strip.begin();
   stepFiltered = analogRead(STEP_PIN); // Initial input
   
-  // Calculate the trigger and hysteresis values
-  elapsedMillis timer;
-  int max = 0;
-  int min = 1000;
-  setAllToColor(0, 0, 255);
-  while (timer < 5000) {
-    stepFiltered = ((stepFiltered * 3) + analogRead(STEP_PIN)) >> 2;
-    Serial.print("stepFitered calibration = " );
-    Serial.println(stepFiltered);
-    if (stepFiltered > max) {
-      max = stepFiltered;
-    }
-    if (stepFiltered < min) {
-      min = stepFiltered;
-    }
-  }
-  setAllToColor(255, 0, 0);
-  int tolerance = (max - min) * 0.2;
-  stepTrigger = min + tolerance;
-  stepHysteresis = max - tolerance;
-  multiplier = 1500 / (stepHysteresis - min);
-  Serial.print("Trigger = ");
-  Serial.println(stepTrigger);
-  Serial.print("Hysteresis = ");
-  Serial.println(stepHysteresis);  
-  Serial.print("Multiplier = ");
-  Serial.println(multiplier);   
-  delay(2000);
-  setAllToColor(0, 0, 0);
+  calibrate();
 }
 
 void loop() {
