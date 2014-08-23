@@ -15,7 +15,7 @@
 // Greg R 40 total 5 at back
 // Greg L 41 total 38 at back
 
-#define DEBUG true //toggle to true to test without wearing.
+#define DEBUG false //toggle to true to test without wearing.
 
 #define N_LEDS 40 // TOTAL number of LEDs in strip
 #define SHOE_LEN_LEDS 21 // Number of LEDs down ONE SIDE of shoe (basically N_LEDS / 2 + 1)
@@ -36,7 +36,7 @@ const uint8_t CYAN[] = {0,255,255};
 const uint8_t WHITE[] = {255,255,255};
 
 // List of program mode names. You can add new modes here. Modes are defined in function setMode()
-typedef enum {MODE_FIRE, MODE_RGB, MODE_CMY, MODE_BGY, MODE_GREEN} progmode;
+typedef enum {MODE_FIRE, MODE_RGB, MODE_CMY, MODE_BGY, MODE_GREEN, MODE_RAINBOW_FALLBACK} progmode;
 #define MODEADDRESS 100 // Byte address in EEPROM to use for the mode counter (0-1023).
 
 // Gamma correction table for LED brightness
@@ -85,11 +85,13 @@ uint8_t
 boolean
   stepping = false; // If set, step was triggered, waiting to release
 
+progmode currentmode;
+
 // setMode() reads the current value of the mode counter and applies
 // whatever colors you define for each mode. The mode that will be used
 // next time you turn on the shoes is defined by the variable nextmode.
 void setMode() {
-  progmode currentmode = (progmode)EEPROM.read(MODEADDRESS); // read mode counter from EEPROM (non-volatile memory)
+  currentmode = (progmode)EEPROM.read(MODEADDRESS); // read mode counter from EEPROM (non-volatile memory)
   progmode nextmode;
   switch(currentmode) {
     default:
@@ -125,6 +127,13 @@ void setMode() {
       memcpy(color0, BLACK, 3);
       memcpy(color1, GREEN, 3);
       memcpy(color2, GREEN, 3);
+      memcpy(color3, WHITE, 3);
+      nextmode = MODE_RAINBOW_FALLBACK;
+      break;
+    case MODE_RAINBOW_FALLBACK:
+      memcpy(color0, WHITE, 3);
+      memcpy(color1, WHITE, 3);
+      memcpy(color2, WHITE, 3);
       memcpy(color3, WHITE, 3);
       nextmode = MODE_FIRE;
       break;
@@ -202,7 +211,7 @@ void setup() {
   setMode();
   pinMode(9, INPUT_PULLUP); // Set internal pullup resistor for sensor pin
   strip.begin();
-
+  
   // a_side and b_side arrays hold the LED indexes of the LEDS from the "back" to the "front" of the shoe
   // one effectively represents the "inside" and one the "outside" of the shoe.e
   memset(a_side_led_indexes, 255, sizeof(a_side_led_indexes));
@@ -220,6 +229,13 @@ void setup() {
   
   calibrate();
   
+  if (currentmode = MODE_RAINBOW_FALLBACK) {
+      colorWipe(strip.Color(255, 0, 0), 50); // Red
+      colorWipe(strip.Color(0, 255, 0), 50); // Green
+      colorWipe(strip.Color(0, 0, 255), 50); // Blue
+      while(true) rainbowCycle(20); // Rainbow Forever.
+  }  
+
   // Clear step magnitude and position buffers
   memset(stepMag, 0, sizeof(stepMag));
   memset(stepX , 0, sizeof(stepX));
@@ -381,3 +397,37 @@ uint8_t bValue(long level) {
   return b;
 }
 
+// Fill the dots one after the other with a color
+void colorWipe(uint32_t c, uint8_t wait) {
+  for(uint16_t i=0; i<strip.numPixels(); i++) {
+      strip.setPixelColor(i, c);
+      strip.show();
+      delay(wait);
+  }
+}
+
+void rainbowCycle(uint8_t wait) {
+  uint16_t i, j;
+
+  for(j=0; j<256*5; j++) { // 5 cycles of all colors on wheel
+    for(i=0; i< strip.numPixels(); i++) {
+      strip.setPixelColor(i, Wheel(((i * 256 / strip.numPixels()) + j) & 255));
+    }
+    strip.show();
+    delay(wait);
+  }
+}
+
+// Input a value 0 to 255 to get a color value.
+// The colours are a transition r - g - b - back to r.
+uint32_t Wheel(byte WheelPos) {
+  if(WheelPos < 85) {
+   return strip.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
+  } else if(WheelPos < 170) {
+   WheelPos -= 85;
+   return strip.Color(255 - WheelPos * 3, 0, WheelPos * 3);
+  } else {
+   WheelPos -= 170;
+   return strip.Color(0, WheelPos * 3, 255 - WheelPos * 3);
+  }
+}
