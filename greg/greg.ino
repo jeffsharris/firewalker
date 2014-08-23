@@ -15,7 +15,7 @@
 // Greg R 40 total 5 at back
 // Greg L 41 total 38 at back
 
-#define DEBUG fals
+#define DEBUG false
 
 #define N_LEDS 40 // TOTAL number of LEDs in strip
 #define SHOE_LEN_LEDS 21 // Number of LEDs down ONE SIDE of shoe (basically N_LEDS / 2 + 1)
