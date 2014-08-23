@@ -15,7 +15,7 @@
 // Greg R 40 total 5 at back
 // Greg L 41 total 38 at back
 
-#define DEBUG false
+#define DEBUG true //toggle to true to test without wearing.
 
 #define N_LEDS 40 // TOTAL number of LEDs in strip
 #define SHOE_LEN_LEDS 21 // Number of LEDs down ONE SIDE of shoe (basically N_LEDS / 2 + 1)
@@ -119,7 +119,7 @@ void setMode() {
       memcpy(color1, BLUE, 3);
       memcpy(color2, GREEN, 3);
       memcpy(color3, YELLOW, 3);
-      nextmode = MODE_GGG;
+      nextmode = MODE_GREEN;
       break;
     case MODE_GREEN:
       memcpy(color0, BLACK, 3);
