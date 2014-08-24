@@ -15,7 +15,8 @@
 // Greg R 40 total 5 at back
 // Greg L 41 total 38 at back
 
-#define DEBUG false //toggle to true to test without wearing.
+#define DEBUG false // toggle to true to test without wearing.
+#define VERBOSE_OUTPUT false // Output a lot of debug information that SLOWS DOWN THE MAIN LOOP but helps investigate sensor issues.
 
 #define N_LEDS 41 // TOTAL number of LEDs in strip
 #define SHOE_LEN_LEDS 21 // Number of LEDs down ONE SIDE of shoe (basically N_LEDS / 2 + 1)
@@ -195,8 +196,8 @@ void calibrate() {
     }
   }
   setAllToColor(0, 0, 0);
-  stepTrigger = mins[count-1] + (maxes[count-1] - mins[count-1]) * 0.4; // The best values for your shoes may not be 0.4 and 0.5. 
-  stepHysteresis = mins[count-1] + (maxes[count-1] - mins[count-1]) * 0.5; // It will depend on your specific sensor
+  stepTrigger = mins[count-1] + (maxes[count-1] - mins[count-1]) * 0.5; // The best values for your shoes may not be 0.4 and 0.5. 
+  stepHysteresis = mins[count-1] + (maxes[count-1] - mins[count-1]) * 0.6; // It will depend on your specific sensor
   multiplier = 1800 / (stepHysteresis - mins[count-1]); // This magic value is chosen so there's a mix of all colors
   Serial.print("Trigger = ");
   Serial.println(stepTrigger);
@@ -263,8 +264,17 @@ void loop() {
   uint8_t i, j;
   // Read analog input, with a little noise filtering
   stepFiltered = ((stepFiltered * 3) + analogRead(STEP_PIN)) >> 2;
-  //Serial.print("stepFitered = " );
-  //Serial.println(stepFiltered);
+  
+  if (VERBOSE_OUTPUT) {
+    Serial.println("stepFitered, stepHysteresis, stepMin" );
+    Serial.print(stepFiltered);
+    Serial.print(", ");
+    Serial.print(stepHysteresis);
+    Serial.print(", ");
+    Serial.print(stepMin);
+    Serial.println();
+  }
+  
   
   // The strip doesn't simply display the current pressure reading. Instead,
   // there's a bit of an animated flourish from heel to toe. This takes time,
@@ -272,6 +282,7 @@ void loop() {
   // 'in flight,' so a short list is kept.
   
   if(stepping) { // If a step was previously triggered...
+    if (VERBOSE_OUTPUT) Serial.println("++++++ STEPPING ++++++");
     if(stepFiltered >= stepHysteresis) { // Has step let up?
       stepping = false; // Yep! Stop monitoring.
       // Add new step to the step list (may be multiple in flight)
