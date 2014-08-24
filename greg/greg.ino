@@ -17,9 +17,9 @@
 
 #define DEBUG false //toggle to true to test without wearing.
 
-#define N_LEDS 40 // TOTAL number of LEDs in strip
+#define N_LEDS 41 // TOTAL number of LEDs in strip
 #define SHOE_LEN_LEDS 21 // Number of LEDs down ONE SIDE of shoe (basically N_LEDS / 2 + 1)
-#define SHOE_LED_BACK 6 // Index of REAR-MOST LED on shoe
+#define SHOE_LED_BACK 38 // Index of REAR-MOST LED on shoe, indexed from 0
 
 #define STEP_PIN A9 // Analog input for footstep
 #define LED_PIN 6 // NeoPixel strip is connected here
